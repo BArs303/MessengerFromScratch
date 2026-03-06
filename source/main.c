@@ -13,15 +13,25 @@
 #include <stdio.h>
 
 #include <fcntl.h>
+#include <string.h>
 
 #define MAX_EVENTS 10
 
-int create_listening_socket(unsigned short port, int listen_queue);
-void accept_conn_req(int efd, int listen_sock);
+struct clients {
+	int client_fds[MAX_EVENTS - 1];
+	size_t size;
+	char *username;
+};
+typedef struct clients Clients;
+
+int create_listening_socket(unsigned short port);
+void accept_conn_req(int efd, int listen_sock, Clients *clients);
 void set_nonblocking(int ifd);
+void process_event(int epoll_fd, struct epoll_event event);
 
 int main() 
 {
+	Clients clients = { .size = 0 };
 	int listen_sock, epoll_fd, nfds;
 	struct epoll_event ev;
 	struct epoll_event events[MAX_EVENTS];
@@ -32,7 +42,7 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
-	listen_sock = create_listening_socket(9997, 5);
+	listen_sock = create_listening_socket(9997);
 	printf("listen socket %d\n", listen_sock);
 
 	ev.events = EPOLLIN;
@@ -49,12 +59,13 @@ int main()
 		}
 		printf("%d\n", nfds);
 		for(int n = 0; n < nfds; n++) {
+			printf("events %u\n", events[n].events);
 			if(events[n].data.fd == listen_sock) {
 				/* accept connection */
-				accept_conn_req(epoll_fd, listen_sock);
+				accept_conn_req(epoll_fd, listen_sock, &clients);
 			}
 			else {
-				/* process data */
+				process_event(epoll_fd, events[n]);
 			}
 		}
 	}
@@ -63,12 +74,16 @@ int main()
 	close(epoll_fd);
 	close(listen_sock);
 	printf("program finished successfully\n");
+
 	return 0;
 }
 
-int create_listening_socket(unsigned short port, int listen_queue)
+
+
+int create_listening_socket(unsigned short port)
 {
 	int sock_fd, opt;
+	unsigned int queue_size = 5;
 	struct sockaddr_in addr;
 	sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock_fd == -1) {
@@ -79,32 +94,32 @@ int create_listening_socket(unsigned short port, int listen_queue)
 	opt = 1;
 	setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = 0x0;
+	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(port);
 	if(bind(sock_fd, (struct sockaddr*) &addr, sizeof(addr)) == -1) {
 		/* cannot bind socket */
 		exit(EXIT_FAILURE);
 	}
-	if(listen(sock_fd, listen_queue) == -1) {
+	if(listen(sock_fd, queue_size) == -1) {
 		/* cannot enable listening mode */
 		exit(EXIT_FAILURE);
 	}
 	return sock_fd;
 }
 
-void accept_conn_req(int efd, int listen_sock) {
-	int new_sock;
+void accept_conn_req(int efd, int listen_sock, Clients *clients) {
+	int new_fd;
 	struct sockaddr_in addr;
 	struct epoll_event ev;
 	socklen_t  addr_len;
 	
 	addr_len = sizeof(addr);
-	new_sock = accept(listen_sock, (struct sockaddr*) &addr, &addr_len);
-	if(new_sock == -1) {
+	new_fd= accept(listen_sock, (struct sockaddr*) &addr, &addr_len);
+	if(new_fd == -1) {
 		/* cannot accept connection */
 		exit(EXIT_FAILURE);
 	}
-	set_nonblocking(new_sock);
+	set_nonblocking(new_fd);
 	printf("client address %hhu.%hhu.%hhu.%hhu:%hu\n",
 			addr.sin_addr.s_addr,
 			addr.sin_addr.s_addr >> 8,
@@ -114,16 +129,45 @@ void accept_conn_req(int efd, int listen_sock) {
 			);
 
 	/* add socket to tracked by epoll */
-	ev.events = EPOLLIN; //add all possible signals
-	ev.data.fd = new_sock;
-	if(epoll_ctl(efd, EPOLL_CTL_ADD, new_sock, &ev) == -1) {
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = new_fd;
+	if(epoll_ctl(efd, EPOLL_CTL_ADD, new_fd, &ev) == -1) {
 		/* epoll ctl error */
 		exit(EXIT_FAILURE);
 	}
+	clients->client_fds[clients->size++] = new_fd;
 }
 
 void set_nonblocking(int ifd) {
 	int flags;
 	flags = fcntl(ifd, F_GETFL);
 	fcntl(ifd, F_SETFL, flags | O_NONBLOCK);
+}
+
+void process_event(int epoll_fd, struct epoll_event event) {
+	char buf[1024];
+	size_t buf_size;
+
+	if(event.events & EPOLLIN) {
+		/* unsafe read */
+		buf_size = read(event.data.fd, buf, 1024);
+		if(buf_size == -1) {
+			/* read failed */
+			printf("read error\n");
+			exit(EXIT_FAILURE);
+		}
+		else if(buf_size == 0) {
+			printf("Nothing to read\n");
+			if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, event.data.fd, &event) == -1) {
+				exit(EXIT_FAILURE);
+			}
+			close(event.data.fd);
+		}
+		else {
+			/* unsafe write queue required */
+			if(write(event.data.fd, buf, buf_size) == -1) {
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
 }
