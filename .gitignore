@@ -1,4 +1,6 @@
+# ignore build dir and its content
 build/*
+build/
 
 # ignore all the elf files
 *.elf
