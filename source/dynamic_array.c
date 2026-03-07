@@ -11,7 +11,7 @@ Darray* darray_new(size_t array_size, size_t element_size) {
   Darray *result;
   DarrayStatus status;
 
-  result = malloc(sizeof(Darray));
+  result = (Darray*)malloc(sizeof(Darray));
   status = darray_init(result, array_size, element_size);
   if(status == DA_OK) {
     return result;
@@ -52,8 +52,8 @@ void darray_free(Darray *a) {
 void* darray_get(Darray *a, size_t index) {
   void *result;
   result = NULL;
-  if(!a && darray_check_index(a, index) == DA_OK) {
-    result = a->array + index * a->element_size;
+  if(a != NULL && darray_check_index(a, index) == DA_OK) {
+    result = (char*)a->array + index * a->element_size;
   }
   return result;
 }
@@ -92,13 +92,15 @@ static DarrayStatus darray_realloc(Darray *a) {
 
 DarrayStatus darray_push(Darray *a, void *element) {
   DarrayStatus rstatus;
+  void *position;
 
   if(!a || !element) {
     return DA_ERR_INIT;
   }
   rstatus = darray_expand(a);
   if(rstatus == DA_OK) {
-    memcpy(a->array + a->size * a->element_size, element, a->element_size);
+    position = (char*)a->array + a->size * a->element_size;
+    memcpy(position, element, a->element_size);
     a->size++;
   }
   return rstatus;
@@ -106,12 +108,14 @@ DarrayStatus darray_push(Darray *a, void *element) {
 
 DarrayStatus darray_set(Darray *a, void *element, size_t index) {
   DarrayStatus rstatus;
+  void *position;
 
   if(!a || !element)
     return DA_ERR_INIT;
   rstatus = darray_check_index(a, index); 
   if(rstatus == DA_OK) {
-    memcpy(a->array + a->element_size * index, element, a->element_size);
+    position = (char*)a->array + a->element_size * index;
+    memcpy(position, element, a->element_size);
     if(index >= a->size) {
       a->size = index;
     }
@@ -121,17 +125,19 @@ DarrayStatus darray_set(Darray *a, void *element, size_t index) {
 
 DarrayStatus darray_insert(Darray *a, void *element, size_t index) {
   DarrayStatus rstatus;
+  void *position;
 
   if(!a || !element)
     return DA_ERR_INIT;
   rstatus = darray_expand(a);
   if(rstatus == DA_OK) {
+    position = (char*)a->array + a->element_size * index; 
     if(index < a->size) {
       darray_shift_right(a, index);
-      memcpy(a->array + a->element_size * index, element, a->element_size);
+      memcpy(position, element, a->element_size);
     }
     else if(index < a->capacity) {
-      memcpy(a->array + a->element_size * index, element, a->element_size);
+      memcpy(position, element, a->element_size);
       a->size = index;
     }
     else {
@@ -145,16 +151,17 @@ DarrayStatus darray_insert(Darray *a, void *element, size_t index) {
 
 static void darray_shift_right(Darray *a, size_t index) {
   void *left, *right;
-  left = a->array + a->element_size * index;
-  right = a->array + a->element_size * (index+1);
+
+  left = (char*)a->array + a->element_size * index;
+  right = (char*)a->array + a->element_size * (index+1);
   memmove(right, left, a->size - index);
   a->size++;
 }
 
 static void darray_shift_left(Darray *a, size_t index) {
   void *left, *right;
-  left = a->array + a->element_size * index;
-  right = a->array + a->element_size * (index+1);
+  left = (char*)a->array + a->element_size * index;
+  right = (char*)a->array + a->element_size * (index+1);
   memmove(left, right, a->size - index);
   a->size--;
 }
@@ -165,7 +172,7 @@ DarrayStatus darray_remove(Darray *a, size_t index, void *out) {
     return DA_ERR_INIT;
   if(index < a->size) {
     if(out != NULL) {
-      memcpy(out, a->array + a->element_size * index, a->element_size);
+      memcpy(out, (char*)a->array + a->element_size * index, a->element_size);
     }
     darray_shift_left(a, index);
     rstatus = DA_OK;
