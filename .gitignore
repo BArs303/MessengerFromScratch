@@ -1,7 +1,5 @@
 build/*
 
-build/
-
 # ignore all the elf files
 *.elf
 # ignore all the qwen related files such as .QWEN.md
