@@ -1,3 +1,10 @@
+# ignore build dir and its content
 build/*
+build/
 
+# ignore all the elf files
 *.elf
+# ignore all the qwen related files such as .QWEN.md
+QWEN.md
+# ignore all the .vscode files
+.vscode/
