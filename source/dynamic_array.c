@@ -2,7 +2,7 @@
 
 static DarrayStatus darray_check_index(Darray *a, size_t index);
 static DarrayStatus darray_expand(Darray *a);
-static DarrayStatus darray_realloc(Darray *a);
+static DarrayStatus darray_realloc(Darray *a, size_t new_size);
 static void darray_shift_right(Darray *a, size_t index);
 static void darray_shift_left(Darray *a, size_t index);  
 
@@ -69,7 +69,8 @@ static DarrayStatus darray_check_index(Darray *a, size_t index) {
 static DarrayStatus darray_expand(Darray *a) {
   DarrayStatus rstatus;
   if(a->size + 1 == a->capacity) {
-    rstatus = darray_realloc(a);
+    a->capacity *= 2;
+    rstatus = darray_realloc(a, a->capacity * a->element_size);
   }
   else {
     rstatus = DA_OK;
@@ -77,11 +78,10 @@ static DarrayStatus darray_expand(Darray *a) {
   return rstatus;
 }
 
-static DarrayStatus darray_realloc(Darray *a) {
+static DarrayStatus darray_realloc(Darray *a, size_t new_size) {
   void *tmp;
 
-  a->capacity *= 2;
-  tmp = realloc(a->array, a->capacity * a->element_size);
+  tmp = realloc(a->array, new_size);
   if(!tmp) {
     return DA_ERR_ALLOC;
   }
@@ -166,6 +166,16 @@ static void darray_shift_left(Darray *a, size_t index) {
   a->size--;
 }
 
+static DarrayStatus darray_shrink(Darray *a) {
+  DarrayStatus rstatus;
+  rstatus = DA_OK;
+  if(a->size < a->capacity / 4) {
+    a->capacity /= 2;
+    rstatus = darray_realloc(a, a->capacity * a->element_size);
+  }
+  return rstatus;
+}
+
 DarrayStatus darray_remove(Darray *a, size_t index, void *out) {
   DarrayStatus rstatus;
   if(!a)
@@ -175,7 +185,7 @@ DarrayStatus darray_remove(Darray *a, size_t index, void *out) {
       memcpy(out, (char*)a->array + a->element_size * index, a->element_size);
     }
     darray_shift_left(a, index);
-    rstatus = DA_OK;
+    rstatus = darray_shrink(a);
   }
   else {
     rstatus = DA_ERR_INDEX;
