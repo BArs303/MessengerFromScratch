@@ -10,6 +10,7 @@
 
 int main() {
   int sfd, opt;
+  int p;
   struct sockaddr_in addr;
   socklen_t size;
   char buf[BUFFER_SIZE];
@@ -35,26 +36,35 @@ int main() {
     perror("connection error\n");
     exit(EXIT_FAILURE);
   }
-
-  printf("Enter your username\n");
-  if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
-    perror("read from stdin error\n");
-    exit(EXIT_FAILURE);
+  p = fork();
+  if(p == -1) {
+    perror("cannot create a process\n");
   }
-  buf_size = write(sfd, buf, BUFFER_SIZE);
-  if(buf_size == -1) {
-    perror("error writing to the server\n");
-    exit(EXIT_FAILURE);
+  else if(p == 0) {
+    /* child process */
+    buf_size = read(sfd, buf, BUFFER_SIZE);
+    if(buf_size == -1) {
+      perror("error reading from the server\n");
+      exit(EXIT_FAILURE);
+    }
+    buf[buf_size] = 0;
+    printf("Server response: %s\n", buf);
   }
+  else {
+    /* parent process */
+    printf("Enter your username\n");
+    if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
+      perror("read from stdin error\n");
+      exit(EXIT_FAILURE);
+    }
 
-  buf_size = read(sfd, buf, BUFFER_SIZE);
-  if(buf_size == -1) {
-    perror("error reading from the server\n");
-    exit(EXIT_FAILURE);
+    buf_size = write(sfd, buf, BUFFER_SIZE);
+    if(buf_size == -1) {
+      perror("error writing to the server\n");
+      exit(EXIT_FAILURE);
+    }
   }
-  buf[buf_size] = 0;
-  printf("Server response: %s\n", buf);
-
+  
   close(sfd);
   return 0;
 }
