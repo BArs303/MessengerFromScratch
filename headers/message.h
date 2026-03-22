@@ -1,5 +1,6 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
+#include <stdint.h>
 
 typedef struct message Message;
 
@@ -9,8 +10,8 @@ enum message_types {
 };
 
 struct message {
-  enum message_types type;
-  unsigned int msg_length;
+  enum message_types type:16;
+  uint16_t msg_length;
   char data[];
 };
 

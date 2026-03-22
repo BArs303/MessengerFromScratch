@@ -15,7 +15,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+
 #include "dynamic_array.h"
+#include "message.h"
 
 #define MAX_EVENTS 10
 #define BUFFER_SIZE 1024
@@ -23,9 +25,6 @@
 typedef enum client_states ClientStates;
 typedef struct client Client;
 
-enum client_states {
-  WAITING_USERNAME,
-};
 
 struct _server {
   int listen_socket;
@@ -36,7 +35,6 @@ struct _server {
 struct client {
   int fd; 
   char *username;
-  ClientStates state;
 };
 
 
@@ -47,6 +45,8 @@ void process_event(struct _server server, struct epoll_event event);
 Client create_client(int fd);
 struct _server server_init(unsigned short port);
 size_t find_fd_index(Darray *a, int fd);
+void process_message(struct _server server, Client *client, Message *msg);
+void update_client_username(Client *client, char *username);
 
 struct _server server_init(unsigned short port) 
 {
@@ -78,7 +78,7 @@ Client create_client(int fd)
 {
   Client result;
   result.fd = fd;
-  result.state = WAITING_USERNAME;
+  result.username = NULL;
   return result;
 }
 
@@ -100,12 +100,13 @@ int main()
       exit(EXIT_FAILURE);
     }
 
-    printf("List of client file descriptors: ");
+    printf("List of clients\n");
     for(size_t i = 0; i < server.clients->size; i++) {
       tmp = darray_get(server.clients, i);
-      printf("%d, ", tmp->fd);
+      printf("client fd: %d\nclient username: %s\n", tmp->fd, tmp->username);
     }
     printf("\n");
+
     for(int n = 0; n < nfds; n++) {
       if(events[n].data.fd == server.listen_socket) {
         /* accept connection */
@@ -209,31 +210,76 @@ void set_nonblocking(int ifd) {
 }
 
 void process_event(struct _server server, struct epoll_event event) {
+  Client *client;
   char buf[BUFFER_SIZE];
   ssize_t buf_size;
+  size_t client_index;
+  int current_fd;
 
+  printf("processing events %X\n", event.events);
+  current_fd = event.data.fd;
+  client_index = find_fd_index(server.clients, current_fd);
   if(event.events & EPOLLIN) {
     /* unsafe read */
-    buf_size = read(event.data.fd, buf, BUFFER_SIZE);
+    buf_size = read(current_fd, buf, BUFFER_SIZE);
     if(buf_size == -1) {
       perror("read error\n");
       exit(EXIT_FAILURE);
     }
     else if(buf_size == 0) {
       printf("Nothing to read\n");
-      if(epoll_ctl(server.epoll_socket, EPOLL_CTL_DEL, event.data.fd, &event) == -1) {
+      if(epoll_ctl(server.epoll_socket, EPOLL_CTL_DEL, current_fd, &event) == -1) {
         perror("error removing socket from epoll\n");
         exit(EXIT_FAILURE);
       }
       /* very ineffecient way of searching fds */
-      darray_remove(server.clients, find_fd_index(server.clients, event.data.fd), NULL);
+      darray_remove(server.clients, client_index, NULL);
       close(event.data.fd);
     }
     else {
-      /* unsafe write queue required */
-      if(write(event.data.fd, buf, buf_size) == -1) {
-        exit(EXIT_FAILURE);
-      }
+      client = darray_get(server.clients, client_index);
+      process_message(server, client, (Message*)buf);
     }
+  }
+  /*else if(event.events & EPOLLHUP) {
+    printf("EPOLLHUP happened\n");
+  }*/
+  else {
+    printf("Something happened NOT IN\n");
+  }
+}
+
+void update_client_username(Client *client, char *username) {
+  size_t n;
+  n = strlen(username);
+  if(client->username == NULL) {
+    client->username = malloc(n);
+    if(client->username == NULL) {
+      exit(EXIT_FAILURE);
+    }
+  }
+  else {
+    client->username = realloc(client->username, n);
+    if(client->username == NULL) {
+      exit(EXIT_FAILURE);
+    }
+  }
+  memcpy(client->username, username, n);
+}
+
+void process_message(struct _server Sever, Client *client,  Message *msg) {
+
+  switch(msg->type) {
+  case USERNAME:
+    update_client_username(client, msg->data);
+    break;
+  case TRANSMISSION:
+    /* unsafe write queue required */
+    if(write(client->fd, msg, msg->msg_length) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    break;
+  default:
+    printf("unknown message type\n");
   }
 }
