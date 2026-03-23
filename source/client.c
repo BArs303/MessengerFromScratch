@@ -5,8 +5,100 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #define BUFFER_SIZE 1024
+
+enum Type {
+  SEND_MSG,
+  CLOSE_CONNECTION,
+  REGISTER,
+  CHOOSE_PARTNER,
+};
+
+struct Message {
+  enum Type type;
+  char *data;
+  size_t data_size;
+};
+
+//parse user input of the form /type: {data} and creates the struct Message out of it.
+//Assumes user_input is null terminated.
+struct Message *parse_user_input(const char *user_input, size_t len) {
+  char type_str[100] = "\0";
+  enum Type type;
+  char *data = malloc(len + 1);
+  
+  if(!data) {
+    perror("Failed to allocate memory.\n");
+    exit(1);
+  }
+
+  strcpy(data,"\0");
+  enum Cursor_Position {
+    BEFORE_SLASH,
+    BTW_SLASH_COLON,
+    AFTER_COLON
+  };
+  
+  enum Cursor_Position cp = BEFORE_SLASH;
+
+  size_t j = 0;
+  size_t i;
+  for(i = 0; i < len; i++) {
+    
+    if(cp == BEFORE_SLASH) {
+      
+      if(isspace(user_input[i])) continue;
+      if(user_input[i] == '/') {
+        cp = BTW_SLASH_COLON; 
+        continue;
+      }
+      
+      strcpy(type_str, "SEND_MSG");
+      strcpy(data, &user_input[i]);
+      break;
+    
+    } else if (cp == BTW_SLASH_COLON) {
+      
+      if(j > 98) {
+        fprintf(stderr, "Command type greater than allowed size. Subsequent command input ignored.\n");
+        cp = AFTER_COLON; 
+        continue;
+      }
+
+
+      if(user_input[i] == ':') {
+        cp = AFTER_COLON;
+        continue;
+      }
+
+      type_str[j++] = user_input[i];
+    
+    } else if (cp == AFTER_COLON) {
+      strcpy(data, &user_input[i]);
+      break;
+    }
+  }
+
+  type_str[j] = 0;
+
+  if(!strcmp(type_str, "SEND_MSG")) type = SEND_MSG;
+  else if(!strcmp(type_str, "CLOSE_CONNECTION")) type = CLOSE_CONNECTION;
+  else if(!strcmp(type_str, "REGISTER")) type = REGISTER;
+  else if(!strcmp(type_str, "CHOOSE_PARTNER")) type = CHOOSE_PARTNER;
+  else type = SEND_MSG;
+
+  struct Message *result = malloc(sizeof(struct Message));
+  if(!result) {
+    perror("Failed to allocate memory\n");
+    exit(1);
+  }
+  *result = (struct Message){.data = data, .data_size = len - i, .type = type};
+
+  return result;
+}
+
 
 int main() {
   int sfd, opt;
