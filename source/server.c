@@ -267,15 +267,31 @@ void update_client_username(Client *client, char *username) {
   memcpy(client->username, username, n);
 }
 
-void process_message(struct _server Sever, Client *client,  Message *msg) {
+int find_fd_by_username(struct _server server, Message *msg) {
+  Client *client;
+  for(size_t i = 0; i < server.clients->size; i++) {
+    client = darray_get(server.clients, i);
+    if(strncmp(client->username, msg->data, msg->length - sizeof(Message)) == 0) {
+      return client->fd;
+    }
+  }
+  return 0;
+}
+
+void process_message(struct _server server, Client *client,  Message *msg) {
+  int client_fd;
 
   switch(msg->type) {
   case USERNAME:
     update_client_username(client, msg->data);
     break;
   case TRANSMISSION:
+    client_fd = find_fd_by_username(server, msg);
+    if(client_fd == 0) {
+      return;
+    }
     /* unsafe write queue required */
-    if(write(client->fd, msg, msg->msg_length) == -1) {
+    if(write(client_fd, msg, msg->length) == -1) {
       exit(EXIT_FAILURE);
     }
     break;

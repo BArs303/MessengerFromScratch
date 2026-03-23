@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include "message.h"
 
 #define BUFFER_SIZE 1024
 
@@ -15,6 +16,7 @@ int main() {
   socklen_t size;
   char buf[BUFFER_SIZE];
   ssize_t buf_size;
+  Message *msg;
 
   sfd = socket(AF_INET, SOCK_STREAM, 0);
   if(sfd == -1) {
@@ -58,11 +60,20 @@ int main() {
       exit(EXIT_FAILURE);
     }
 
-    buf_size = write(sfd, buf, BUFFER_SIZE);
+
+    buf_size = sizeof(Message) + strlen(buf);
+
+    msg = malloc(buf_size);
+    msg->type = USERNAME;
+    msg->msg_length = buf_size;
+    memcpy(msg->data, buf, buf_size - sizeof(Message));
+
+    buf_size = write(sfd, msg, buf_size);
     if(buf_size == -1) {
       perror("error writing to the server\n");
       exit(EXIT_FAILURE);
     }
+    sleep(2);
   }
   
   close(sfd);

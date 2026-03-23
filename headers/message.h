@@ -11,7 +11,7 @@ enum message_types {
 
 struct message {
   enum message_types type:16;
-  uint16_t msg_length;
+  uint16_t length;
   char data[];
 };
 

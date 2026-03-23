@@ -7,7 +7,7 @@ include_directories(headers)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_compile_options(-Wall -std=c99 -g)
 set(SOURCES 
-	source/main.c
+	source/server.c
 	source/dynamic_array.c
 )
 
