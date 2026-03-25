@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.2.3)
+cmake_minimum_required(VERSION 3.28.0)
 Project("main.elf")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -12,3 +12,4 @@ set(SOURCES
 )
 
 add_executable(${SERVER_EXECUTABLE} ${SOURCES})
+add_executable(client.elf source/client.c source/parser.c)

@@ -6,10 +6,17 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include "message.h"
+#include "parser.h"
 
 #define BUFFER_SIZE 1024
 
+const char *const Type_Names[] = {"INVALID", "SEND_MSG", "CLOSE_CONNECTION", "REGISTER", "CHOOSE_PARTNER"};
 int main() {
+  
+  // struct Message *msg_test = parse("/SEND_MSG: Hello");
+  // printf("%s\n", msg_test->data);
+  // printf("%s\n", Type_Names[msg_test->type]);
+  // printf("%zu\n", msg_test->data_size);
   int sfd, opt;
   int p;
   struct sockaddr_in addr;
@@ -75,7 +82,7 @@ int main() {
     }
     sleep(2);
   }
-  
+
   close(sfd);
   return 0;
 }
