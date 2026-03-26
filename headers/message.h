@@ -7,6 +7,11 @@ typedef struct message Message;
 enum message_types {
   USERNAME,
   TRANSMISSION,
+  INVALID,
+  SEND_MSG,
+  CLOSE_CONNECTION,
+  REGISTER,
+  CHOOSE_PARTNER,
 };
 
 struct message {

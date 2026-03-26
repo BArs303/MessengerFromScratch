@@ -5,21 +5,21 @@
 
 //input must be of the format /{type}: {data}
 //input must be null terminated
-struct Message *parse(char input[]) {
+Message *parse(char input[]) {
   
   char writable_input[strlen(input)+1];
   strcpy(writable_input, input);
 
-  enum Type type = INVALID;
+  enum message_types type = INVALID;
   char *data = NULL;
   char *data_copy;
 
   if(input[0] == '/' && strchr(&input[1], ':')) {
     char *type_str = strtok(&writable_input[1], ":");
-    if(!strcmp(type_str, "SEND_MSG")) type = SEND_MSG;
-    else if(!strcmp(type_str, "REGISTER")) type = REGISTER;
-    else if(!strcmp(type_str, "CLOSE_CONNECTION")) type = CLOSE_CONNECTION;
-    else if(!strcmp(type_str, "CHOOSE_PARTNER")) type = CHOOSE_PARTNER;
+    if(!strcmp(type_str, "send")) type = SEND_MSG;
+    else if(!strcmp(type_str, "register")) type = REGISTER;
+    else if(!strcmp(type_str, "close")) type = CLOSE_CONNECTION;
+    else if(!strcmp(type_str, "choose")) type = CHOOSE_PARTNER;
     else type = INVALID;
 
     data = strtok(NULL, ":");
@@ -32,18 +32,16 @@ struct Message *parse(char input[]) {
     strcpy(data_copy, data);
   }
 
-  struct Message *result = malloc(sizeof(struct Message));
+  Message *result = malloc(sizeof(Message) + strlen(data));
   
   if(!result) {
     fprintf(stderr, "Failed to allocate memory for output of parse. Exiting the program.\n");
     exit(1);
   }
 
-  *result = (struct Message) {
-    .data = data_copy,
-    .type = type,
-    .data_size = strlen(data_copy),
-  };
+  memcpy(result->data, data_copy, strlen(data_copy));
+  result->length = data_copy ? strlen(data_copy) : 0;
+  result->type = type;
 
   return result;
 }

@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/mnt/c/users/vivek/projects/MessengerFromScratch/build",
+  "command": "/usr/bin/cc  -I/mnt/c/users/vivek/projects/MessengerFromScratch/headers -Wall -std=c99 -g -o CMakeFiles/server.elf.dir/source/main.c.o -c /mnt/c/users/vivek/projects/MessengerFromScratch/source/main.c",
+  "file": "/mnt/c/users/vivek/projects/MessengerFromScratch/source/main.c",
+  "output": "CMakeFiles/server.elf.dir/source/main.c.o"
+},
+{
+  "directory": "/mnt/c/users/vivek/projects/MessengerFromScratch/build",
+  "command": "/usr/bin/cc  -I/mnt/c/users/vivek/projects/MessengerFromScratch/headers -Wall -std=c99 -g -o CMakeFiles/server.elf.dir/source/dynamic_array.c.o -c /mnt/c/users/vivek/projects/MessengerFromScratch/source/dynamic_array.c",
+  "file": "/mnt/c/users/vivek/projects/MessengerFromScratch/source/dynamic_array.c",
+  "output": "CMakeFiles/server.elf.dir/source/dynamic_array.c.o"
+}
+]

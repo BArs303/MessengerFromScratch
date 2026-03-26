@@ -7,3 +7,4 @@ build/*
 QWEN.md
 # ignore all the .vscode files
 .vscode/
+.cache/
