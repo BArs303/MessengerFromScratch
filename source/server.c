@@ -268,18 +268,24 @@ void update_client_username(Client *client, char *username) {
 }
 
 int find_fd_by_username(struct _server server, Message *msg) {
-  Client *client;
+  /*Client *client;
   for(size_t i = 0; i < server.clients->size; i++) {
     client = darray_get(server.clients, i);
     if(strncmp(client->username, msg->data, msg->length - sizeof(Message)) == 0) {
       return client->fd;
     }
-  }
-  return 0;
+  }*/
+  return -1;
 }
 
 void process_message(struct _server server, Client *client,  Message *msg) {
   int client_fd;
+
+  /* throw error if message size is huge */
+
+  if(msg->length <= sizeof(Message)) {
+    return;
+  }
 
   switch(msg->type) {
   case REGISTER:
@@ -287,7 +293,7 @@ void process_message(struct _server server, Client *client,  Message *msg) {
     break;
   case TRANSMISSION:
     client_fd = find_fd_by_username(server, msg);
-    if(client_fd == 0) {
+    if(client_fd == -1) {
       return;
     }
     /* unsafe write queue required */

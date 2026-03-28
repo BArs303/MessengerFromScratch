@@ -16,10 +16,10 @@ Message *parse(char input[]) {
 
   if(input[0] == '/' && strchr(&input[1], ':')) {
     char *type_str = strtok(&writable_input[1], ":");
-    if(!strcmp(type_str, "send")) type = SEND_MSG;
+    if(!strcmp(type_str, "send")) type = TRANSMISSION;
     else if(!strcmp(type_str, "register")) type = REGISTER;
     else if(!strcmp(type_str, "close")) type = CLOSE_CONNECTION;
-    else if(!strcmp(type_str, "choose")) type = CHOOSE_PARTNER;
+    else if(!strcmp(type_str, "choose")) type = INVALID;
     else type = INVALID;
 
     data = strtok(NULL, ":");
