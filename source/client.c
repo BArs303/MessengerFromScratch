@@ -10,77 +10,73 @@
 
 #define BUFFER_SIZE 1024
 
-const char *const Type_Names[] = {"USERNAME","TRANSMISSION", "INVALID", "SEND_MSG", "CLOSE_CONNECTION", "REGISTER", "CHOOSE_PARTNER"};
-int main() {
-  
-  // Message *msg_test = parse("/send: Hello");
-  // printf("%s\n", msg_test->data);
-  // printf("%s\n", Type_Names[msg_test->type]);
-  // printf("%zu\n", msg_test->length);
-  int sfd, opt;
-  int p;
+int establish_connection(int address, int port) {
+  int socket_fd, opt;
   struct sockaddr_in addr;
-  socklen_t size;
-  char buf[BUFFER_SIZE];
-  ssize_t buf_size;
-  Message *msg;
+  socklen_t addr_size;
 
-  sfd = socket(AF_INET, SOCK_STREAM, 0);
-  if(sfd == -1) {
+  socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if(socket_fd == -1) {
     perror("create socket error\n");
     exit(EXIT_FAILURE);
   }
   opt = 1;
-  setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+  setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
   addr.sin_family = AF_INET;
-  /* local address 127.0.0.1 */
-  addr.sin_addr.s_addr = htonl(0x7F000001);
-  /* server port */
-  addr.sin_port = htons(9997);
+  addr.sin_addr.s_addr = htonl(address);
+  addr.sin_port = htons(port);
 
-  size = sizeof(addr);
-
-  if(connect(sfd, (struct sockaddr*) &addr, size) == -1) {
+  addr_size = sizeof(addr);
+  if(connect(socket_fd, (struct sockaddr*) &addr, addr_size) == -1) {
     perror("connection error\n");
     exit(EXIT_FAILURE);
   }
-  p = fork();
-  if(p == -1) {
+  return socket_fd;
+
+}
+
+const char *const Type_Names[] = {"USERNAME","TRANSMISSION", "INVALID", "SEND_MSG", "CLOSE_CONNECTION", "REGISTER", "CHOOSE_PARTNER"};
+int main() {
+  
+  int sfd, pid;
+  char buf[BUFFER_SIZE];
+  ssize_t buf_size;
+  Message *msg;
+
+  sfd = establish_connection(0x7F000001, 9997);
+  
+  pid = fork();
+  if(pid == -1) {
     perror("cannot create a process\n");
   }
-  else if(p == 0) {
+  else if(pid == 0) {
     /* child process */
-    buf_size = read(sfd, buf, BUFFER_SIZE);
+
+    /*buf_size = read(sfd, buf, BUFFER_SIZE);
     if(buf_size == -1) {
       perror("error reading from the server\n");
       exit(EXIT_FAILURE);
     }
     buf[buf_size] = 0;
-    printf("Server response: %s\n", buf);
+    printf("Server response: %s\n", buf);*/
   }
   else {
     /* parent process */
-    printf("Enter your username\n");
-    if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
-      perror("read from stdin error\n");
-      exit(EXIT_FAILURE);
+    while(1) {
+      if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
+        perror("read from stdin error\n");
+        exit(EXIT_FAILURE);
+      }
+
     }
-
-
-    buf_size = sizeof(Message) + strlen(buf);
-
-    msg = malloc(buf_size);
-    msg->type = USERNAME;
-    msg->length = buf_size;
-    memcpy(msg->data, buf, buf_size - sizeof(Message));
-
-    buf_size = write(sfd, msg, buf_size);
+    
+    msg = parse(buf);
+    /*buf_size = write(sfd, msg, msg->length);
     if(buf_size == -1) {
       perror("error writing to the server\n");
       exit(EXIT_FAILURE);
-    }
-    sleep(2);
+    }*/
   }
 
   close(sfd);
