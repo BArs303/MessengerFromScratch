@@ -1,17 +1,16 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct message Message;
 
 enum message_types {
-  USERNAME,
-  TRANSMISSION,
-  INVALID,
-  SEND_MSG,
-  CLOSE_CONNECTION,
   REGISTER,
-  CHOOSE_PARTNER,
+  TRANSMISSION,
+  IP,
+  INVALID,
+  CLOSE_CONNECTION,
 };
 
 struct message {
@@ -19,5 +18,16 @@ struct message {
   uint16_t length;
   char data[];
 };
+
+/* 
+ * A helper structure that contains pointers to the metadata 
+ * in the received message
+ */
+struct message_metadata {
+  char *receiver;
+  char *sender;
+};
+
+struct message_metadata extract_metadata(Message *msg);
 
 #endif

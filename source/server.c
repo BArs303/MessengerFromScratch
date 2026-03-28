@@ -282,7 +282,7 @@ void process_message(struct _server server, Client *client,  Message *msg) {
   int client_fd;
 
   switch(msg->type) {
-  case USERNAME:
+  case REGISTER:
     update_client_username(client, msg->data);
     break;
   case TRANSMISSION:

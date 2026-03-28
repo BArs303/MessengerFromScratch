@@ -12,6 +12,7 @@ add_compile_options(-Wall -std=c99 -g)
 set(SERVER_SOURCES 
   source/server.c
   source/dynamic_array.c
+  source/message.c
 )
 
 set(CLIENT_SOURCES 
