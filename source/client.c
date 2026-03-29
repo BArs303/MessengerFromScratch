@@ -37,32 +37,47 @@ int establish_connection(int address, int port) {
 }
 
 const char *const Type_Names[] = {"USERNAME","TRANSMISSION", "INVALID", "SEND_MSG", "CLOSE_CONNECTION", "REGISTER", "CHOOSE_PARTNER"};
+
 int main() {
   
   int sfd, pid;
   char buf[BUFFER_SIZE];
   ssize_t buf_size;
   Message *msg;
+  struct network_string *username;
 
   sfd = establish_connection(0x7F000001, 9997);
+
+  if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
+    perror("read from stdin error\n");
+    exit(EXIT_FAILURE);
+  }
+
+  buf_size = sizeof(Message) + sizeof(struct network_string) +  strlen(buf) + 1;
+  msg = malloc(buf_size); 
+  msg->length = buf_size;
+  username = (struct network_string*)msg->data;
+  username->length = strlen(buf) + 1;
+  memcpy(username->string, buf, username->length);
+  write(sfd, msg, msg->length);
   
-  pid = fork();
+  /* pid = fork();
   if(pid == -1) {
     perror("cannot create a process\n");
   }
   else if(pid == 0) {
-    /* child process */
+    /* child process *
 
-    /*buf_size = read(sfd, buf, BUFFER_SIZE);
+    buf_size = read(sfd, buf, BUFFER_SIZE);
     if(buf_size == -1) {
       perror("error reading from the server\n");
       exit(EXIT_FAILURE);
     }
     buf[buf_size] = 0;
-    printf("Server response: %s\n", buf);*/
+    printf("Server response: %s\n", buf);
   }
   else {
-    /* parent process */
+    /* parent process *
     while(1) {
       if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
         perror("read from stdin error\n");
@@ -72,12 +87,12 @@ int main() {
     }
     
     msg = parse(buf);
-    /*buf_size = write(sfd, msg, msg->length);
+    buf_size = write(sfd, msg, msg->length);
     if(buf_size == -1) {
       perror("error writing to the server\n");
       exit(EXIT_FAILURE);
-    }*/
-  }
+    }
+  }*/
 
   close(sfd);
   return 0;

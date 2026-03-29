@@ -46,7 +46,7 @@ Client create_client(int fd);
 struct _server server_init(unsigned short port);
 size_t find_fd_index(Darray *a, int fd);
 void process_message(struct _server server, Client *client, Message *msg);
-void update_client_username(Client *client, char *username);
+void update_client_username(Client *client, Message *username);
 
 struct _server server_init(unsigned short port) 
 {
@@ -249,22 +249,29 @@ void process_event(struct _server server, struct epoll_event event) {
   }
 }
 
-void update_client_username(Client *client, char *username) {
-  size_t n;
-  n = strlen(username);
+void update_client_username(Client *client, Message *msg) {
+  struct network_string *username;
+  username = (struct network_string*)msg->data;
+
+  if(sizeof(struct network_string) + username->length != 
+      msg->length - sizeof(Message)) {
+    perror("Invalid username message\n");
+    return;
+  }
+
   if(client->username == NULL) {
-    client->username = malloc(n);
+    client->username = malloc(username->length);
     if(client->username == NULL) {
       exit(EXIT_FAILURE);
     }
   }
   else {
-    client->username = realloc(client->username, n);
+    client->username = realloc(client->username, username->length);
     if(client->username == NULL) {
       exit(EXIT_FAILURE);
     }
   }
-  memcpy(client->username, username, n);
+  memcpy(client->username, username->string, username->length);
 }
 
 int find_fd_by_username(struct _server server, Message *msg) {
@@ -282,14 +289,13 @@ void process_message(struct _server server, Client *client,  Message *msg) {
   int client_fd;
 
   /* throw error if message size is huge */
-
   if(msg->length <= sizeof(Message)) {
     return;
   }
 
   switch(msg->type) {
   case REGISTER:
-    update_client_username(client, msg->data);
+    update_client_username(client, msg);
     break;
   case TRANSMISSION:
     client_fd = find_fd_by_username(server, msg);

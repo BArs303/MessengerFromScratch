@@ -28,7 +28,7 @@ struct message_metadata {
   char *sender;
 };
 
-struct network_string{
+struct network_string {
   size_t length;
   char string[];
 };
