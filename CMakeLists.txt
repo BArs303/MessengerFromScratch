@@ -17,6 +17,7 @@ set(SERVER_SOURCES
 
 set(CLIENT_SOURCES 
   source/client.c
+  source/dynamic_array.c
   source/parser.c
 )
 

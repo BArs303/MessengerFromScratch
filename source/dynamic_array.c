@@ -210,6 +210,7 @@ DarrayStatus darray_merge(Darray *dst, void *src, size_t array_size) {
   if(rstatus == DA_OK) {
     position = (char*)dst->array + dst->size * dst->element_size;
     memcpy(position, src, array_size);
+    dst->size += array_size;
   }
 
   return DA_OK;

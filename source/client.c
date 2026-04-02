@@ -5,8 +5,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include "dynamic_array.h"
 #include "message.h"
-#include "parser.h"
 
 #define BUFFER_SIZE 1024
 
@@ -39,12 +39,17 @@ int establish_connection(int address, int port) {
 const char *const Type_Names[] = {"USERNAME","TRANSMISSION", "INVALID", "SEND_MSG", "CLOSE_CONNECTION", "REGISTER", "CHOOSE_PARTNER"};
 
 int main() {
-  
+
   int sfd, pid;
+  size_t buf_size;
   char buf[BUFFER_SIZE];
-  ssize_t buf_size;
-  Message *msg;
-  struct network_string *username;
+  Darray *msg;
+  Message *msg_ptr;
+  StringView *username;
+  char *tmp;
+
+  msg = darray_new(sizeof(Message), 1);
+  msg->size = sizeof(Message);
 
   sfd = establish_connection(0x7F000001, 9997);
 
@@ -52,14 +57,21 @@ int main() {
     perror("read from stdin error\n");
     exit(EXIT_FAILURE);
   }
+  buf_size = strlen(buf);
+  darray_merge(msg, &buf_size, sizeof(buf_size));
+  darray_merge(msg, buf, strlen(buf));
 
-  buf_size = sizeof(Message) + sizeof(struct network_string) +  strlen(buf) + 1;
-  msg = malloc(buf_size); 
-  msg->length = buf_size;
-  username = (struct network_string*)msg->data;
-  username->length = strlen(buf) + 1;
-  memcpy(username->string, buf, username->length);
-  write(sfd, msg, msg->length);
+  /*
+   * You should not modify the value of an array element.
+   * Doing so can cause a lot of problems.
+   * In this case, we are not using the array for its intended purpose,
+   * so we can modify its contents, but we still need to do so with caution
+   */
+  msg_ptr = darray_get(msg, 0);
+  msg_ptr->length = msg->size - sizeof(Message);
+  msg_ptr->type = REGISTER;
+  tmp = msg->array;
+  write(sfd, msg_ptr, msg->size);
   
   /* pid = fork();
   if(pid == -1) {

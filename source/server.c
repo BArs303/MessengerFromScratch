@@ -250,11 +250,10 @@ void process_event(struct _server server, struct epoll_event event) {
 }
 
 void update_client_username(Client *client, Message *msg) {
-  struct network_string *username;
-  username = (struct network_string*)msg->data;
+  StringView *username;
+  username = (StringView*)msg->data;
 
-  if(sizeof(struct network_string) + username->length != 
-      msg->length - sizeof(Message)) {
+  if(sizeof(StringView) + username->length != msg->length) {
     perror("Invalid username message\n");
     return;
   }

@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 typedef struct message Message;
+typedef struct string_view StringView;
 
 enum message_types {
   REGISTER,
@@ -24,15 +25,16 @@ struct message {
  * in the received message
  */
 struct message_metadata {
-  char *receiver;
-  char *sender;
+  StringView *receiver;
+  StringView *sender;
 };
 
-struct network_string {
+struct string_view {
   size_t length;
   char string[];
 };
 
 struct message_metadata extract_metadata(Message *msg);
+StringView* create_string_view(char *s);
 
 #endif
