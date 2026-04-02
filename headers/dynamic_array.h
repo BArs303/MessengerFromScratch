@@ -2,6 +2,7 @@
 #define DARRAY_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 #define DARRAY_INITIAL_CAPACITY 16
@@ -36,5 +37,6 @@ void* darray_get(Darray *a, size_t index);
 
 /* out argument can be NULL */
 DarrayStatus darray_remove(Darray *a, size_t index, void *out);
+DarrayStatus darray_merge(Darray *a, void *array, size_t array_size);
 
 #endif

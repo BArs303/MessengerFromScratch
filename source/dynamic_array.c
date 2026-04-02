@@ -1,7 +1,7 @@
 #include "dynamic_array.h"
 
 static DarrayStatus darray_check_index(Darray *a, size_t index);
-static DarrayStatus darray_expand(Darray *a);
+static DarrayStatus darray_expand(Darray *a, size_t new_size);
 static DarrayStatus darray_realloc(Darray *a, size_t new_size);
 static void darray_shift_right(Darray *a, size_t index);
 static void darray_shift_left(Darray *a, size_t index);  
@@ -66,10 +66,17 @@ static DarrayStatus darray_check_index(Darray *a, size_t index) {
     return DA_ERR_INDEX;
 }
 
-static DarrayStatus darray_expand(Darray *a) {
+static DarrayStatus darray_expand(Darray *a, size_t new_size) {
   DarrayStatus rstatus;
-  if(a->size + 1 == a->capacity) {
+  bool realloc_required;
+
+  realloc_required = false;
+  while(new_size >= a->capacity * a->element_size) {
     a->capacity *= 2;
+    realloc_required = true;
+  }
+
+  if(realloc_required) {
     rstatus = darray_realloc(a, a->capacity * a->element_size);
   }
   else {
@@ -97,7 +104,7 @@ DarrayStatus darray_push(Darray *a, void *element) {
   if(!a || !element) {
     return DA_ERR_INIT;
   }
-  rstatus = darray_expand(a);
+  rstatus = darray_expand(a, (a->size + 1) * a->element_size);
   if(rstatus == DA_OK) {
     position = (char*)a->array + a->size * a->element_size;
     memcpy(position, element, a->element_size);
@@ -129,7 +136,7 @@ DarrayStatus darray_insert(Darray *a, void *element, size_t index) {
 
   if(!a || !element)
     return DA_ERR_INIT;
-  rstatus = darray_expand(a);
+  rstatus = darray_expand(a, (a->size + 1) * a->element_size);
   if(rstatus == DA_OK) {
     position = (char*)a->array + a->element_size * index; 
     if(index < a->size) {
@@ -191,4 +198,19 @@ DarrayStatus darray_remove(Darray *a, size_t index, void *out) {
     rstatus = DA_ERR_INDEX;
   }
   return rstatus;
+}
+
+DarrayStatus darray_merge(Darray *dst, void *src, size_t array_size) {
+  DarrayStatus rstatus;
+  void *position;
+
+  if(!dst || !src) 
+    return DA_ERR_INIT;
+  rstatus = darray_expand(dst, dst->size * dst->element_size + array_size);
+  if(rstatus == DA_OK) {
+    position = (char*)dst->array + dst->size * dst->element_size;
+    memcpy(position, src, array_size);
+  }
+
+  return DA_OK;
 }
