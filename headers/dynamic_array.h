@@ -16,10 +16,10 @@ enum darray_status {
 
 
 struct dynamic_array {
-	void *array;
-	size_t size;
-	size_t capacity;
-        size_t element_size;
+  void *array;
+  size_t size;
+  size_t capacity;
+  size_t element_size;
 };
 
 typedef struct dynamic_array Darray;

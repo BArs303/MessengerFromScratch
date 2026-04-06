@@ -2,13 +2,22 @@
 #define MESSAGE_H
 #include <stdint.h>
 #include <stddef.h>
+#include "dynamic_array.h"
 
 typedef struct message Message;
 typedef struct string_view StringView;
+typedef struct message_parameter MessageParameter;
+
+enum message_parameter_types {
+    RECEIVER_USERNAME,
+    SENDER_USERNAME,
+    TEXT,
+};
 
 enum message_types {
   REGISTER,
   TRANSMISSION,
+  CHOOSE,
   IP,
   INVALID,
   CLOSE_CONNECTION,
@@ -17,16 +26,13 @@ enum message_types {
 struct message {
   enum message_types type:16;
   uint16_t length;
-  char data[];
+  uint8_t parameters[];
 };
 
-/* 
- * A helper structure that contains pointers to the metadata 
- * in the received message
- */
-struct message_metadata {
-  StringView *receiver;
-  StringView *sender;
+struct message_parameter {
+  enum message_parameter_types type:16;
+  uint16_t length;
+  uint8_t value[];
 };
 
 struct string_view {
@@ -34,7 +40,8 @@ struct string_view {
   char string[];
 };
 
-struct message_metadata extract_metadata(Message *msg);
-StringView* create_string_view(char *s);
+Darray* create_message_container();
+Message* get_message(Darray *message_container);
+MessageParameter* get_message_parameter(Message *msg, size_t index);
 
 #endif

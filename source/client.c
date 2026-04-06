@@ -5,8 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-#include "dynamic_array.h"
-#include "message.h"
+#include "client.h"
 
 #define BUFFER_SIZE 1024
 
@@ -36,49 +35,25 @@ int establish_connection(int address, int port) {
 
 }
 
-const char *const Type_Names[] = {"USERNAME","TRANSMISSION", "INVALID", "SEND_MSG", "CLOSE_CONNECTION", "REGISTER", "CHOOSE_PARTNER"};
-
 int main() {
 
   int sfd, pid;
   size_t buf_size;
   char buf[BUFFER_SIZE];
-  Darray *msg;
-  Message *msg_ptr;
-  StringView *username;
-  char *tmp;
+  struct session_data current_session;
+  Message *msg;
 
-  msg = darray_new(sizeof(Message), 1);
-  msg->size = sizeof(Message);
+  current_session.message_container = create_message_container();
+  current_session.partner_username = darray_new(DARRAY_INITIAL_CAPACITY, 1);
 
   sfd = establish_connection(0x7F000001, 9997);
 
-  if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
-    perror("read from stdin error\n");
-    exit(EXIT_FAILURE);
-  }
-  buf_size = strlen(buf);
-  darray_merge(msg, &buf_size, sizeof(buf_size));
-  darray_merge(msg, buf, strlen(buf));
-
-  /*
-   * You should not modify the value of an array element.
-   * Doing so can cause a lot of problems.
-   * In this case, we are not using the array for its intended purpose,
-   * so we can modify its contents, but we still need to do so with caution
-   */
-  msg_ptr = darray_get(msg, 0);
-  msg_ptr->length = msg->size - sizeof(Message);
-  msg_ptr->type = REGISTER;
-  tmp = msg->array;
-  write(sfd, msg_ptr, msg->size);
-  
-  /* pid = fork();
+  pid = fork();
   if(pid == -1) {
     perror("cannot create a process\n");
   }
   else if(pid == 0) {
-    /* child process *
+    /* child process */
 
     buf_size = read(sfd, buf, BUFFER_SIZE);
     if(buf_size == -1) {
@@ -89,22 +64,21 @@ int main() {
     printf("Server response: %s\n", buf);
   }
   else {
-    /* parent process *
+    /* parent process */
     while(1) {
       if(fgets(buf, BUFFER_SIZE, stdin) == NULL) {
         perror("read from stdin error\n");
         exit(EXIT_FAILURE);
       }
-
+      parse(buf, current_session);
+      msg = get_message(current_session.message_container);
+      buf_size = write(sfd, msg, msg->length);
+      if(buf_size == -1) {
+        perror("error writing to the server\n");
+        exit(EXIT_FAILURE);
+      }
     }
-    
-    msg = parse(buf);
-    buf_size = write(sfd, msg, msg->length);
-    if(buf_size == -1) {
-      perror("error writing to the server\n");
-      exit(EXIT_FAILURE);
-    }
-  }*/
+  }
 
   close(sfd);
   return 0;

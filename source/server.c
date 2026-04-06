@@ -250,6 +250,7 @@ void process_event(struct _server server, struct epoll_event event) {
 }
 
 void update_client_username(Client *client, Message *msg) {
+  /*
   StringView *username;
   username = (StringView*)msg->data;
 
@@ -271,6 +272,7 @@ void update_client_username(Client *client, Message *msg) {
     }
   }
   memcpy(client->username, username->string, username->length);
+  */
 }
 
 int find_fd_by_username(struct _server server, Message *msg) {

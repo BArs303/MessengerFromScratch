@@ -1,48 +1,34 @@
-#include <stdlib.h>
-#include <string.h>
 #include "message.h"
 
-struct message_metadata extract_metadata(Message *msg) {
-  size_t data_size;
-  struct message_metadata result;
-
-  result.receiver = NULL;
-  result.sender = NULL;
-  if(msg->type == TRANSMISSION && msg->length > sizeof(Message)) {
-    data_size = msg->length - sizeof(Message); 
-    //result.receiver = msg->data;
-  }
-
-  return result;
-}
-
-StringView* create_string_view(char *s) {
-  StringView *result;
-  size_t length;
-
-  length = strlen(s);
-  result = malloc(sizeof(StringView) + length);
-  if(result == NULL) {
-    exit(EXIT_FAILURE);
-  }
-
-  result->length = length;
-  memcpy(result->string, s, length);
-  return result;
-}
-
-Message* create_message(size_t data_size) {
+Message* get_message(Darray *message_container) {
   Message *result;
-  result = malloc(sizeof(Message) + data_size);
-  if(result == NULL) {
-    exit(EXIT_FAILURE);
-  }
-  result->length = data_size;
+  result = message_container->array;
+  result->length = message_container->size;
+  return message_container->array;
+}
+
+Darray* create_message_container() {
+  Darray *result;
+  result = darray_new(sizeof(Message), 1);
+  result->size = sizeof(Message);
   return result;
 }
 
-Message* message_append() {
-  return NULL;
+MessageParameter* get_message_parameter(Message *msg, size_t index) {
+  MessageParameter *current_parameter;
+  uint8_t *parray;
+  size_t counter, offset, array_size;
+
+  if(msg->length < sizeof(Message))
+      return NULL;
+  array_size = msg->length - sizeof(Message);
+  for(counter = 0, offset = 0; counter <= index; counter++) {
+    parray = msg->parameters;
+    current_parameter = (MessageParameter*)(parray + offset);
+    if(offset >= array_size) {
+      return NULL;
+    }
+    offset += current_parameter->length;
+  }
+  return current_parameter;
 }
-
-

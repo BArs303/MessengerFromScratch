@@ -1,11 +1,10 @@
-#include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "client.h"
 
-//input must be of the format /{type}: {data}
-//input must be null terminated
-Message *parse(char input[]) {
+//input must be of the format /{type} {data}
+void parse(char input[], SessionData current_session) {
   
   char writable_input[strlen(input)+1];
   strcpy(writable_input, input);
