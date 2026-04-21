@@ -250,29 +250,35 @@ void process_event(struct _server server, struct epoll_event event) {
 }
 
 void update_client_username(Client *client, Message *msg) {
-  /*
-  StringView *username;
-  username = (StringView*)msg->data;
+  MessageParameter *username;
+  size_t username_length;
 
-  if(sizeof(StringView) + username->length != msg->length) {
-    perror("Invalid username message\n");
+  username = find_message_parameter(msg, SENDER_USERNAME);
+  if(username == NULL) {
+	  perror("Parameter with type: REGISTER not found\n");
+	  return;
+  }
+
+  if(username->length > msg->length) {
+    perror("Invalid parameter size\n");
     return;
   }
 
+  username_length = username->length - sizeof(MessageParameter);
+
   if(client->username == NULL) {
-    client->username = malloc(username->length);
+    client->username = malloc(username_length);
     if(client->username == NULL) {
       exit(EXIT_FAILURE);
     }
   }
   else {
-    client->username = realloc(client->username, username->length);
+    client->username = realloc(client->username, username_length);
     if(client->username == NULL) {
       exit(EXIT_FAILURE);
     }
   }
-  memcpy(client->username, username->string, username->length);
-  */
+  memcpy(client->username, username->value, username_length);
 }
 
 int find_fd_by_username(struct _server server, Message *msg) {
@@ -290,23 +296,26 @@ void process_message(struct _server server, Client *client,  Message *msg) {
   int client_fd;
 
   /* throw error if message size is huge */
-  if(msg->length <= sizeof(Message)) {
+  if(msg->length < sizeof(Message)) {
     return;
   }
 
   switch(msg->type) {
   case REGISTER:
+	  printf("message type: REGISTER\n");
     update_client_username(client, msg);
     break;
   case TRANSMISSION:
-    client_fd = find_fd_by_username(server, msg);
+	printf("message type: TRANSMISSION\n");
+
+    /*client_fd = find_fd_by_username(server, msg);
     if(client_fd == -1) {
       return;
-    }
+    }*/
     /* unsafe write queue required */
-    if(write(client_fd, msg, msg->length) == -1) {
+    /*if(write(client_fd, msg, msg->length) == -1) {
       exit(EXIT_FAILURE);
-    }
+    }*/
     break;
   default:
     printf("unknown message type\n");

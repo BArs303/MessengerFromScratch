@@ -1,7 +1,6 @@
 #include "dynamic_array.h"
 
 static DarrayStatus darray_check_index(Darray *a, size_t index);
-static DarrayStatus darray_expand(Darray *a, size_t new_size);
 static DarrayStatus darray_realloc(Darray *a, size_t new_size);
 static void darray_shift_right(Darray *a, size_t index);
 static void darray_shift_left(Darray *a, size_t index);  
@@ -66,7 +65,7 @@ static DarrayStatus darray_check_index(Darray *a, size_t index) {
     return DA_ERR_INDEX;
 }
 
-static DarrayStatus darray_expand(Darray *a, size_t new_size) {
+DarrayStatus darray_expand(Darray *a, size_t new_size) {
   DarrayStatus rstatus;
   bool realloc_required;
 

@@ -41,7 +41,11 @@ struct string_view {
 };
 
 Darray* create_message_container();
-Message* get_message(Darray *message_container);
+Message* unwrap_message(Darray *message_container);
+MessageParameter* unwrap_message_parameter(Darray *message_container);
 MessageParameter* get_message_parameter(Message *msg, size_t index);
+MessageParameter* add_message_parameter(Darray *message_container, void *value, size_t size);
+MessageParameter* find_message_parameter(Message *msg, enum message_parameter_types type);
+void clear_msg_container(Darray *message_container);
 
 #endif

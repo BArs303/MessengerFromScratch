@@ -9,6 +9,6 @@ struct session_data {
   Darray *partner_username;
 };
 
-void parse(char *user_input, SessionData current_session);
+Message* form_message(char *user_input, SessionData current_session);
 
 #endif

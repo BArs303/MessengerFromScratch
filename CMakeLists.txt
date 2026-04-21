@@ -18,7 +18,7 @@ set(SERVER_SOURCES
 set(CLIENT_SOURCES 
   source/client.c
   source/dynamic_array.c
-  source/parser.c
+  source/message.c
 )
 
 add_executable(${SERVER_EXECUTABLE} ${SERVER_SOURCES})

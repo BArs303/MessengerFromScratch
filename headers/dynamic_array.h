@@ -38,5 +38,6 @@ void* darray_get(Darray *a, size_t index);
 /* out argument can be NULL */
 DarrayStatus darray_remove(Darray *a, size_t index, void *out);
 DarrayStatus darray_merge(Darray *a, void *array, size_t array_size);
+DarrayStatus darray_expand(Darray *a, size_t new_size);
 
 #endif
