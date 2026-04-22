@@ -282,13 +282,28 @@ void update_client_username(Client *client, Message *msg) {
 }
 
 int find_fd_by_username(struct _server server, Message *msg) {
-  /*Client *client;
+  Client *client;
+  MessageParameter *partner_username;
+  size_t c = 0;
+  do {
+	partner_username = get_message_parameter(msg, c);
+	if(partner_username == NULL) {
+		return -1;
+	}
+	else if(partner_username->type == RECEIVER_USERNAME) {
+		break;
+	}
+	c++;
+  } while(true);
+
+  printf("partner username %s\n", partner_username->value);
+
   for(size_t i = 0; i < server.clients->size; i++) {
     client = darray_get(server.clients, i);
-    if(strncmp(client->username, msg->data, msg->length - sizeof(Message)) == 0) {
+    if(strncmp(client->username, partner_username->value, partner_username->length - sizeof(MessageParameter)) == 0) {
       return client->fd;
     }
-  }*/
+  }
   return -1;
 }
 
@@ -308,14 +323,15 @@ void process_message(struct _server server, Client *client,  Message *msg) {
   case TRANSMISSION:
 	printf("message type: TRANSMISSION\n");
 
-    /*client_fd = find_fd_by_username(server, msg);
+    client_fd = find_fd_by_username(server, msg);
     if(client_fd == -1) {
+		perror("Client with username not found\n");
       return;
-    }*/
+    }
     /* unsafe write queue required */
-    /*if(write(client_fd, msg, msg->length) == -1) {
+    if(write(client_fd, msg, msg->length) == -1) {
       exit(EXIT_FAILURE);
-    }*/
+    }
     break;
   default:
     printf("unknown message type\n");

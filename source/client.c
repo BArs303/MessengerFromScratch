@@ -46,10 +46,11 @@ void init_session(SessionData *current_session) {
 int main() {
 
   int sfd, pid;
-  size_t buf_size;
+  size_t buf_size, pindex;
   char buf[BUFFER_SIZE];
   struct session_data current_session;
   Message *msg;
+  MessageParameter *parameter;
 
   init_session(&current_session);
   sfd = establish_connection(0x7F000001, 9997);
@@ -60,14 +61,21 @@ int main() {
   }
   else if(pid == 0) {
     /* child process */
+	while(true) {
+		buf_size = read(sfd, buf, BUFFER_SIZE);
+		if(buf_size == -1) {
+		  perror("error reading from the server\n");
+		  exit(EXIT_FAILURE);
+		}
+		msg = (Message*)buf;
 
-    buf_size = read(sfd, buf, BUFFER_SIZE);
-    if(buf_size == -1) {
-      perror("error reading from the server\n");
-      exit(EXIT_FAILURE);
-    }
-    buf[buf_size] = 0;
-    printf("Server response: %s\n", buf);
+		printf("Server response:\nMessage type: %d\nParameters:\n", msg->type);
+		pindex = 0;
+		while((parameter = get_message_parameter(msg, pindex)) != NULL) {
+			printf("parameter type %d value: %s\n", parameter->type, parameter->value);
+			pindex++;
+		}
+	}
   }
   else {
     /* parent process */
@@ -77,7 +85,7 @@ int main() {
         exit(EXIT_FAILURE);
       }
 	  msg = form_message(buf, current_session);
-	  printf("Message size: %hu\nMessage type: %d\n", msg->length, msg->type);
+	  //printf("Message size: %hu\nMessage type: %d\n", msg->length, msg->type);
       buf_size = write(sfd, msg, msg->length);
       if(buf_size == -1) {
         perror("error writing to the server\n");
@@ -104,14 +112,17 @@ Message* form_message(char *user_input, SessionData current_session) {
 	clear_msg_container(current_session.message_container);
 	if(strcmp(command, "/send") == 0) {
 		type = TRANSMISSION;
-		/*parameter = add_message_parameter(container, data, strlen(data));
-		parameter->type = CHOOSE;*/
+		printf("Message will be send to %s\n", current_session.partner_username->array);
+		parameter = add_message_parameter(container, current_session.partner_username->array, current_session.partner_username->size);
+		parameter->type = RECEIVER_USERNAME;
+		parameter = add_message_parameter(container, data, strlen(data) + 1);
+		parameter->type = TEXT;
 
 	}
 	else if(strcmp(command, "/choose") == 0) {
-		/* check function result */
 		current_session.partner_username->size = 0;
-		darray_merge(current_session.partner_username, data, strlen(data));
+		/* copy the \0 character*/
+		darray_merge(current_session.partner_username, data, strlen(data) + 1);
 		type = CHOOSE;
 	}
 	else if(strcmp(command, "/register") == 0) {
